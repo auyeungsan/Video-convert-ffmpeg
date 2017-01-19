@@ -1,0 +1,168 @@
+<!doctype html>
+
+<html>
+
+<head>
+   <meta charset="utf-8">
+
+      <title>HLS Monitoring</title>
+   
+   <!-- optimize mobile versions -->
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+      <!-- The "minimalist" skin - choose from: "functional.css", "minimalist.css", "playful.css" -->
+   <link rel="stylesheet" href="//releases.flowplayer.org/6.0.5/skin/minimalist.css">
+      <!-- the quality selector stylesheet -->
+   <link rel="stylesheet" href="//releases.flowplayer.org/quality-selector/flowplayer.quality-selector.css">
+   
+   <!-- Minimal styling for this standalone page, can be removed -->
+   <link rel="stylesheet" href="http://demos.flowplayer.org/media/css/demo.css">
+   <!-- Syntax highlighting of source code, can be removed -->
+   <link rel="stylesheet" href="http://demos.flowplayer.org/media/css/pygments.css">
+   
+<style>
+
+.flowplayer {
+  background: #777;
+  margin-bottom: 30px;
+}
+ 
+/* customized error message */
+.flowplayer.is-error .fp-message {
+  background-image: url(http://demos.flowplayer.org/media/img/interruption.png);
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.flowplayer.is-error .fp-message h2,
+.flowplayer.is-error .fp-message p {
+  font-weight: bold;
+  color: #000;
+  text-shadow: 1px 1px #fff
+}
+.flowplayer.is-error .fp-message h2 {
+  font-size: 200%;
+}
+.flowplayer.is-error .fp-message p {
+  font-size: 150%;
+}
+
+</style>
+
+         <!-- Flowplayer library -->
+   <script src="//releases.flowplayer.org/6.0.5/flowplayer.min.js"></script>
+         <!-- The hlsjs plugin for playback of HLS without Flash in modern browsers -->
+   <script src="//releases.flowplayer.org/hlsjs/flowplayer.hlsjs.min.js"></script>
+            <!-- the quality selector plugin -->
+   <script src="//releases.flowplayer.org/quality-selector/flowplayer.quality-selector.min.js"></script>
+      
+   
+<script>
+
+window.onload = function () {
+ 
+  var container = document.getElementById("live"),
+      timer,
+ 
+  player = flowplayer(container, {
+    ratio: 9/16,
+    splash: true,
+    live: true,
+    clip: {
+      flashls: {
+        // limit amount of retries to load hls manifests in Flash
+        manifestloadmaxretry: 10
+      },
+      sources: [
+        { type: "application/x-mpegurl",
+          src:  "http://203.208.141.157:443/desk608hd/index.m3u8" }
+      ]
+    }
+ 
+  }).on("error", function (e, api, err) {
+    var delay = 2,
+        header = container.querySelector(".fp-message h2"),
+        detail = container.querySelector(".fp-message p");
+ 
+    clearInterval(timer);
+ 
+    if (err.code === 2 || err.code === 4) {
+      header.innerHTML = "We are sorry, currently no live stream available.";
+      detail.innerHTML = "Retrying in <span>" + delay + "</span> seconds ...";
+ 
+      if (flowplayer.support.flashVideo) {
+        api.one("flashdisabled", function () {
+          container.querySelector(".fp-flash-disabled").style.display = "none";
+        });
+      }
+ 
+      timer = setInterval(function () {
+        delay -= 1;
+        detail.querySelector("span").innerHTML = delay;
+ 
+        if (!delay) {
+          clearInterval(timer);
+          api.error = api.loading = false;
+          container.className = container.className.replace(/ *is-error */, "");
+          api.load(api.conf.clip);
+        }
+ 
+      }, 1000);
+    }
+ 
+  }),
+ 
+
+  /*
+   * the following is for demo purposes and simulation only
+   * do not use in production!
+   */
+ 
+  buttons = document.getElementsByTagName("button"),
+  i;
+ 
+  for (i = 0; i < buttons.length; i += 1) {
+    buttons[i].onclick = function () {
+      var errorstream = !this.id
+          ? null
+          : this.id === "dummy"
+            ? "//edge.flowplayer.org/dummy-live.m3u8"
+            : "//edge.flowplayer.org/non-existent.m3u8";
+ 
+      if (player.error) {
+        // clean retry
+        player.error = player.loading = false;
+        container.className = container.className.replace(/ *is-error */, "");
+      }
+ 
+      if (errorstream) {
+        player.load({
+          sources: [
+            { type: "application/x-mpegurl", src: errorstream }
+          ]
+        });
+      } else {
+        player.load(player.conf.clip);
+      }
+    };
+  }
+ 
+};
+
+</script>
+
+</head>
+
+<body>
+
+<div style="width:320px;height:180px;"id="live" class="fixed-controls"></div>
+ 
+<!-- for demo purposes only -->
+<!--
+<div class="info">
+  <p><button id="dummy" type="button">Simulate dummy stream</button>
+  <button id="nonexistent" type="button">Simulate non existent stream</button>
+  <button type="button">Play configured stream</button></p>
+</div>
+-->
+</body>
+</html>
