@@ -1,5 +1,6 @@
 # source: https://trac.ffmpeg.org/wiki/CentosCompilationGuide
 
+
 yum install autoconf automake gcc gcc-c++ git libtool make nasm pkgconfig zlib-devel
 
 mkdir ~/ffmpeg_sources
